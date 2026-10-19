@@ -1,177 +1,232 @@
-# Placement Portal: Project Context
+# AGENTS.md --- MME TNP Placement Dashboard
 
-This portal lets our department's placement representative (CICRep) record placement data for all 70 students, and lets professors view it as a live, interactive dashboard. This doc is the shared spec for everyone writing code, and it deliberately assumes no tech stack.
+## 1. Project context
 
-## Roles and access
+Build a departmental Training and Placement (TNP) dashboard for the
+Metallurgical and Materials Engineering (MME) department at NIT
+Tiruchirappalli.
 
-There are two roles, and only the CICRep can change data. Professors only view.
+The website is for viewing and managing historical placement data from
+the previous six years. It is not a college-wide placement portal and is
+not a live recruitment-management system.
 
-| Area | Admin (CICRep) | Professor |
-| --- | --- | --- |
-| Dashboard | View | View |
-| Data Entry | View and edit | No access |
-| Calendar | View and edit | View only (working default, see Open questions) |
+The dashboard must generate its charts, KPIs, filters, comparisons, and
+reports dynamically from the stored historical data.
 
-- Access is enforced by role on the server, not only by hiding tabs. A professor who calls an admin action directly must be refused.
-- Roles belong to individual accounts and can be reassigned, so the next CICRep can take over without a code change.
+This file is the shared project context for every coding agent and every
+developer working on the repository, including developers using
+different laptops. Treat the committed version of this file and the
+current repository code as the source of truth. Do not depend on private
+chat history, local agent memory, or assumptions that are not documented
+here.
 
-## Dashboard
+## 2. Scope boundaries
 
-Both roles see the same dashboard. It should feel like a Power BI report: key numbers on top, interactive charts below, everything filterable. It shows the current academic year by default.
+There are two application roles:
 
-**Headline numbers**
+-   **ADMIN**: Can manage historical placement data and perform
+    authorized administrative actions.
+-   **PROFESSOR**: Can access the dashboard. Default permission is
+    read-only unless the project owner explicitly changes this rule.
 
-- Placed, unplaced and placement % (placed out of 70)
-- Placed : unplaced ratio
-- Highest, lowest, mean, median and mode CTC for the selected year (definitions under Rules and calculations)
+The `users` table exists only for authentication and role-based access
+control. It is not a student or placement-data table.
 
-**Charts**
+Do not add features or tables for: - Other departments or department
+management. - Student or recruiter login accounts. - Job postings,
+applications, shortlisting, interviews, or live recruitment workflows. -
+A college-wide placement portal.
 
-- Placed vs unplaced (donut)
-- Placement type split: PPO, FTE, FTE + Intern
-- Sector-wise placements (bar)
-- Company-wise placements (bar), with a toggle to switch between company-wise and sector-wise views (our reading of the senior's "toggle bar company", to confirm)
-- CTC distribution by salary band (histogram)
-- Placements over time (cumulative line), with last year's line overlaid
+Do not expand the project beyond this scope without an explicit
+requirement.
 
-**Interactions**
+## 3. Current conceptual data model
 
-- Year selector, defaulting to the current year
-- Click a chart segment to filter every other chart and card
-- Hover tooltips with exact counts
-- Date comparison: pick a date and compare the number placed so far this year with the number placed by the same date last year
+The initial hand-drawn model contains these entities and attributes.
+Preserve this intent when implementing the schema. Inspect the existing
+repository and historical data before changing field names or adding new
+entities.
 
-**UX requirements**
+### Student
 
-- Loading skeletons, and a friendly empty state when there is no data yet
-- Works on a phone and a laptop
-- Chart colours that stay readable without relying on colour alone
+Current intended attributes: - `roll_number` - `name` -
+`placement_status` - `company` / company reference
 
-## Data entry (admin only)
+A student record represents a student in the MME historical placement
+dataset. Use a stable primary key if appropriate and keep the roll
+number unique when the source data supports that rule.
 
-The CICRep maintains one row per student, 70 in total. The 70 names already exist and are loaded once, so the CICRep only fills in placement details.
+### Company
 
-| Column | Input | Rule |
-| --- | --- | --- |
-| Roll no | Read-only | Unique, loaded from the existing list |
-| Name | Read-only | Loaded from the existing list |
-| Company | Dropdown of known companies, with "add new" | Required unless type is NA |
-| Sector | Dropdown | Auto-filled from the company; required unless type is NA |
-| Placement type | Dropdown: PPO, FTE, FTE + Intern, NA | Required |
-| Salary (CTC, LPA) | Number | Single value or range, see Open questions |
-| Offer date | Date | Drives the over-time chart and last-year comparison (our addition) |
+Current intended attributes: - `name` - `domain` - `profile` -
+`pay_offered` - `contact`, with contact details such as: - HR name -
+email - phone number - P/F status, as labelled in the original sketch;
+verify its exact meaning before encoding it
 
-- Edit inline in a table, with search by name or roll no and a filter by placement type.
-- Choosing NA clears company, sector and salary.
-- Validate before saving, and make unsaved changes obvious.
-- Support CSV import for bulk loading, including the initial 70 and past years.
-- Keep edits recoverable (change history or soft delete), since this is the single source of truth.
+Company data should be reusable across student records. If the actual
+historical data shows that pay differs by student, role, or offer, do
+not incorrectly treat `pay_offered` as a universal company attribute.
+Propose the smallest justified change and document it.
 
-## Calendar
+### User
 
-The calendar shows the companies coming to campus, as a month view plus an upcoming-first list. The admin adds, edits and removes entries.
+The `users` table is only for login and role-based access: - `id` -
+`name` - `email` - `password_hash` or the equivalent required by the
+chosen authentication provider - `role` (`ADMIN` or `PROFESSOR`)
 
-Each entry carries the fields from the senior's notes:
+Do not put student placement details in `users`. Do not create a
+department table.
 
-| Field | Notes |
-| --- | --- |
-| Company | Linked to the company record |
-| Drive date | Date of the visit |
-| HR | Name of the HR contact |
-| Phone | HR phone number (the notes say "no", read as number) |
-| Email | HR email address |
-| Status | Proposed values: Upcoming, Confirmed, Completed, Cancelled (to confirm) |
-| PVR | Meaning unknown, see Open questions |
+### Historical data
 
-Professors get a read-only view by the working default.
+The application must support six years of historical data in the same
+schema. Represent the relevant batch/year as data, not as separate
+tables or separate implementations for each year.
 
-## Data model
+Before finalizing the schema, inspect the actual files and current code.
+Determine whether each source row represents a student, a company
+relationship, or an individual offer. Do not assume that one student can
+have only one offer unless the data and departmental rules confirm it.
 
-Five entities. Field names are suggestions; keep the meaning.
+## 4. Shared engineering rules
 
-| Entity | Fields | Notes |
-| --- | --- | --- |
-| User | id, email, name, role (admin or professor) | One account per CICRep and per professor |
-| Student | roll\_no (unique), name | Seeded with the 70 existing names |
-| Company | id, name, sector | Sector comes from a fixed list, so "TCS" and "tcs" never split a chart |
-| Placement | id, roll\_no, company (empty if NA), type, ctc, offer\_date, academic\_year | Type is PPO, FTE, FTE\_INTERN or NA |
-| Drive | id, company, date, hr\_name, hr\_phone, hr\_email, status, pvr | Powers the calendar |
+1.  **Inspect before editing.** Read the relevant existing files,
+    package scripts, schema, migrations, and nearby code before making
+    changes.
+2.  **Follow the existing stack.** Do not replace frameworks, libraries,
+    authentication, styling systems, or database tooling without an
+    explicit reason and approval.
+3.  **Use the repository as shared memory.** If a decision affects other
+    agents, document it in this file or the relevant project
+    documentation and commit it.
+4.  **Do not invent requirements.** If the sketch or source data is
+    ambiguous, record the uncertainty and ask for a decision instead of
+    silently choosing a business rule.
+5.  **Keep changes focused.** Implement only the task assigned to you.
+    Do not rebuild unrelated modules or rewrite files owned by another
+    workstream.
+6.  **Preserve compatibility.** Check existing imports, routes, API
+    contracts, types, and database migrations before changing shared
+    interfaces.
+7.  **Protect data.** Never commit real student records, passwords,
+    tokens, `.env` files, or private credentials. Use fictional data in
+    examples and tests.
+8.  **Validate changes.** Run relevant lint, type-check, tests, and
+    build commands where available. Report commands that could not be
+    run.
+9.  **Avoid destructive changes.** Do not drop tables, reset shared
+    databases, rewrite migrations already used by teammates, or remove
+    other agents' work without approval.
+10. **No duplicate implementations.** Search for an existing component,
+    query, utility, or service before creating another version.
 
-A company has many placements and many drives. A student has one placement row, or more if multiple offers are allowed (see Open questions).
+## 5. Multi-agent collaboration protocol
 
-**Allowed values**
+Different agents may work from different laptops. The shared Git
+repository is the coordination mechanism.
 
-- Placement type: PPO, FTE, FTE + Intern (full-time offer with a 6-month internship), NA
-- Sector: the list in the senior's photo, still to be typed out
+### Before starting a task
 
-## Rules and calculations
+-   Pull or inspect the latest agreed branch state.
+-   Read this `AGENTS.md` and any module-specific instructions.
+-   Inspect the files relevant to the assigned task.
+-   Check whether another agent owns or is editing the same files.
+-   State the exact scope of the task before editing.
 
-Everything on the dashboard is derived from the placement rows, and nothing is stored twice. These are working definitions: the senior did not specify them, so change them if he disagrees.
+### While working
 
-- **Placed** means the placement type is PPO, FTE or FTE + Intern. **Unplaced** means NA.
-- **Placement %** is placed ÷ 70 × 100. The **ratio** is placed : unplaced.
-- **CTC stats** (mean, median, highest, lowest) run over placed students who have a CTC, for the selected academic year only. Internship stipends are not CTC.
-- **Mode** is the most common CTC value. If every CTC is different, which is likely with 70 students, show the most common salary band instead (for example 6 to 8 LPA) and label it as a band.
-- **Current year** is the selected academic year, defaulting to the latest.
-- **Last-year comparison**: for a chosen date, count students whose offer date falls on or before that day and month, for this year and for last year.
-- Compute all stats in one shared, unit-tested function so every card and chart agrees.
+-   Own a clearly bounded module or set of files.
+-   Avoid simultaneous edits to shared files such as the root layout,
+    global styles, database schema, authentication configuration,
+    package manifest, and shared types.
+-   If a shared contract must change, coordinate the change first and
+    document it.
+-   Do not implement another agent's module merely because it is
+    referenced by your task. Use its agreed interface or a clearly
+    marked temporary stub.
+-   Do not overwrite, revert, or reformat unrelated changes.
+-   Keep commits small and descriptive.
 
-## Open questions
+### Before handing off
 
-Confirm these with the senior before building the parts they touch.
+Report: - What was implemented. - Which files changed. - Any schema,
+API, type, or component contracts introduced or changed. - Commands and
+tests run, with results. - Known limitations or unresolved questions. -
+Any work that another agent must do next.
 
-1. What does "PVR" mean in the calendar fields (Company, HR, no, email, status, PVR)?
-2. "Streams - photo hai": the sector list exists only as a photo. Someone needs to type it out so it can become the sector dropdown.
-3. Salary: is it one CTC per student, or a range per company ("range of salaries")? Mean, median and mode need one number per student.
-4. Can professors see the calendar? The notes say yes, the first brief said dashboard only. Working default: a read-only calendar.
-5. Should professors see individual student names and CTCs, or only aggregates? This is real students' data, so check what the department is comfortable with.
-6. "Toggle bar company": we read it as a switch between company-wise and sector-wise views. Is that right?
-7. Last year's data: does it exist, and who loads it? The comparison needs last year's placements with offer dates.
-8. Multiple offers: can one student hold more than one? The dashboard must count each student once.
-9. Do PPOs count in the CTC statistics?
-10. How do users sign in? The method is undecided, but it must identify each person and map them to a role.
+Never claim a feature works unless it has been implemented and checked.
 
-## Glossary
+## 6. Suggested work boundaries
 
-| Term | Meaning |
-| --- | --- |
-| CICRep | Our department's placement representative, and the only admin |
-| PPO | Pre-placement offer: a job offer made to a student after an internship |
-| FTE | Full-time employee offer |
-| FTE + Intern | Full-time offer that starts with a 6-month internship ("fte+6month" in the notes) |
-| NA | Not placed, no offer |
-| CTC | Cost to company: the yearly salary package |
-| LPA | Lakhs per annum |
-| Sector / stream | The industry a company belongs to (the notes say "streams") |
-| Drive | A company's recruiting visit to campus |
+These are coordination boundaries, not instructions for every agent to
+implement every module. Assign each task to one owner.
 
-## Senior's original notes
+-   **Database and data-import owner:** schema, migrations, constraints,
+    historical CSV/Excel import, validation, and seed data.
+-   **Authentication and access owner:** login, session handling,
+    `ADMIN`/`PROFESSOR` permissions, and route/API protection. This
+    owner must not redesign placement records.
+-   **Dashboard and analytics owner:** KPI definitions, filtered
+    aggregate queries, charts, and year-to-year comparisons using agreed
+    data contracts.
+-   **UI and integration owner:** shared layout, navigation, filters,
+    responsive presentation, and integration of existing modules.
 
-Kept exactly as written, so nobody has to guess what the senior meant.
+One person or agent may own multiple areas if the team is small, but
+each file and shared contract must have a clear owner. Do not ask every
+agent to independently build the entire website.
 
-```text
-median , mode , avg ctc for the current year
-interactive data
-ratio
-placed/unplaced
+## 7. Database and analytics rules
 
-70 people
-Admin / profs
+-   Use the database engine already selected in the repository. If none
+    is selected, propose PostgreSQL and confirm before committing to it.
+-   Keep historical years in shared tables.
+-   Use foreign keys and appropriate unique constraints.
+-   Store compensation as a numeric value with a documented unit, such
+    as LPA, rather than free-form text when the source data permits
+    reliable conversion.
+-   Preserve missing or uncertain source values as missing; do not
+    fabricate them.
+-   Normalize company names carefully during imports and retain a way to
+    review ambiguous matches.
+-   Define placement-rate denominators explicitly. Do not calculate a
+    placement percentage unless the total eligible student count for
+    that batch is known.
+-   Distinguish placed students from offers if the source data counts
+    them differently.
+-   Compute dashboard statistics from the data, using SQL aggregation or
+    an existing query layer. Do not store derived KPIs as manually
+    maintained values.
+-   Apply server-side authorization to data-changing operations. Hiding
+    a button in the UI is not access control.
+-   Keep student-level data restricted to authorized users; aggregate
+    dashboard views should expose only the data needed for their
+    purpose.
 
-Admin
-He can upload
-70 people name (alr upload)
-Company name
-Streams - photo hai
-Range of salaries
-Ppo fte fte+6month
+## 8. Definition of done
 
-Prof
-Should see the calender and dashboard
+A task is complete only when: - It satisfies the assigned scope and this
+project context. - It integrates with the current codebase and agreed
+contracts. - It does not introduce unrelated features or duplicate
+implementations. - Relevant validation commands have been run, or the
+limitation is clearly reported. - Documentation is updated if a shared
+assumption, contract, or workflow changed. - The handoff states exactly
+what changed and what remains.
 
-Put the date and compare with the last year's data ( no of people )
-Toggle bar company
+## 9. Open decisions
 
-Calender in which next companies will be shown
-Company  hr  no  email  status  pvr
-```
+Do not silently resolve these without inspecting the data or asking the
+project owner:
+
+-   Which database engine and ORM are already in use?
+-   Does one student have one final placement record or can the dataset
+    contain multiple offers?
+-   Does `pay_offered` vary by company, role, or individual offer?
+-   What exactly does the `P/F status` label in the sketch mean?
+-   Does the historical dataset contain the total eligible student count
+    for each batch?
+-   Can professors only view analytics, or must they also edit records?
+
+When an answer becomes known, update this section or the relevant schema
+documentation and commit the change so every laptop and agent receives
+the same context.

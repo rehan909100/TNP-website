@@ -6,7 +6,7 @@
  *
  * Each word's tail sits in a one-column grid whose track animates from 0fr to 1fr, so it widens to its
  * natural width with no measuring; its letters then rise in one after another. The plain "&" spins away
- * while a copper italic "&" spins in, and the space around it opens up.
+ * while a copper "&" spins in, and the space around it opens up.
  */
 
 import { useState, type PointerEvent } from 'react';
@@ -54,7 +54,7 @@ function Ampersand({ open }: { open: boolean }) {
         &amp;
       </span>
       <span
-        className={`[grid-area:1/1] font-normal italic text-[#E08A50] transition duration-700 motion-reduce:transition-none ${EASE_BACK} ${
+        className={`[grid-area:1/1] font-normal text-[#E08A50] transition duration-700 motion-reduce:transition-none ${EASE_BACK} ${
           open ? 'rotate-0 scale-110 opacity-100' : 'rotate-[200deg] scale-50 opacity-0'
         }`}
       >
@@ -74,7 +74,7 @@ export default function TnpTitle({ className = '' }: { className?: string }) {
   return (
     <h1
       aria-label="Training and Placement"
-      className={`${display.className} flex w-max shrink-0 cursor-default select-none items-start whitespace-nowrap font-semibold leading-[1.2] tracking-[-0.025em] text-[#F3EDE7] ${className}`}
+      className={`${display.className} flex w-max shrink-0 cursor-default select-none items-start whitespace-nowrap font-normal leading-[1.2] tracking-[-0.025em] text-[#F3EDE7] ${className}`}
       onPointerEnter={(event) => hover(event, true)}
       onPointerLeave={(event) => hover(event, false)}
       onPointerUp={(event) => {

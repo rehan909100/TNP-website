@@ -1,8 +1,9 @@
-import { Playfair_Display } from 'next/font/google';
+import localFont from 'next/font/local';
 
-/** Display serif for the login title. Variable weight; the italic supplies the "&". */
-export const display = Playfair_Display({
-  subsets: ['latin'],
-  style: ['normal', 'italic'],
+/** User-supplied Brigold DEMO font for the expanding T&P title. */
+export const display = localFont({
+  src: './fonts/Brigold DEMO.otf',
+  weight: '400',
+  style: 'normal',
   display: 'swap',
 });

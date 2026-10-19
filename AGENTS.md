@@ -179,6 +179,17 @@ limitation is clearly reported. - Documentation is updated if a shared
 assumption, contract, or workflow changed. - The handoff states exactly
 what changed and what remains.
 9. Open decisions
+Schema decisions confirmed with the project owner are documented in
+`db/README.md` and implemented in `db/schema.ts`. These supersede the
+initial sketch and the corresponding open questions below: PostgreSQL
+with Drizzle; at most one offer per student; company name as primary
+key; composite offer key (company_name, student_roll_number), with
+student_roll_number additionally unique; offer-specific compensation;
+only eligible students recorded; PVR as a nullable yes/no field; and
+professors remain read-only. Company profile, joining_date, and is_active
+are excluded. See that document for unresolved PVR semantics,
+placement-year meaning, source-data validation, and auth integration.
+
 Do not silently resolve these without inspecting the data or asking the
 project owner:
 - Which database engine and ORM are already in use?

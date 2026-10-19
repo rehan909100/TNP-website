@@ -75,7 +75,6 @@ export default function TnpTitle({ className = '' }: { className?: string }) {
     <h1
       aria-label="Training and Placement"
       className={`${display.className} flex w-max shrink-0 cursor-default select-none items-start whitespace-nowrap font-semibold leading-[1.2] tracking-[-0.025em] text-[#F3EDE7] ${className}`}
-      style={{ fontVariationSettings: '"SOFT" 50' }}
       onPointerEnter={(event) => hover(event, true)}
       onPointerLeave={(event) => hover(event, false)}
       onPointerUp={(event) => {

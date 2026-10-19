@@ -1,9 +1,8 @@
-import { Fraunces } from 'next/font/google';
+import { Playfair_Display } from 'next/font/google';
 
-/** Display serif for the login title. Variable weight and optical size; the italic supplies the "&". */
-export const display = Fraunces({
+/** Display serif for the login title. Variable weight; the italic supplies the "&". */
+export const display = Playfair_Display({
   subsets: ['latin'],
   style: ['normal', 'italic'],
-  axes: ['opsz', 'SOFT'],
   display: 'swap',
 });

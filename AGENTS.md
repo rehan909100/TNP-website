@@ -33,44 +33,69 @@ A college-wide placement portal.
 
 Do not expand the project beyond this scope without an explicit
 requirement.
-3. Current conceptual data model
-The initial hand-drawn model contains these entities and attributes.
-Preserve this intent when implementing the schema. Inspect the existing
-repository and historical data before changing field names or adding new
-entities.
-Student
-Current intended attributes: - roll_number - name -
-placement_status - company / company reference
+3. Current implemented data model
+`db/schema.ts` is the canonical Drizzle PostgreSQL schema. `db/README.md`
+documents its decisions and integration limitations. Use this model rather
+than the original sketch. TypeScript properties use camelCase; SQL columns
+use snake_case. The table and column names below are SQL names.
 
-A student record represents a student in the MME historical placement
-dataset. Use a stable primary key if appropriate and keep the roll
-number unique when the source data supports that rule.
-Company
-Current intended attributes: - name - domain - profile -
-pay_offered - contact, with contact details such as: - HR name -
-email - phone number - P/F status, as labelled in the original sketch;
-verify its exact meaning before encoding it
+Student (`students`; export `students`)
+- roll_number: text primary key.
+- name: nullable text.
+- batch_year: required integer identifying the graduating batch.
+Only eligible MME students are recorded. A student has zero or one offer.
+Placement status is derived using offer existence: PLACED when an offer
+exists, otherwise UNPLACED. Do not add an independently stored
+placement_status or a company reference to students.
 
-Company data should be reusable across student records. If the actual
-historical data shows that pay differs by student, role, or offer, do
-not incorrectly treat pay_offered as a universal company attribute.
-Propose the smallest justified change and document it.
-User
-The users table is only for login and role-based access: - id -
-name - email - password_hash or the equivalent required by the
-chosen authentication provider - role (ADMIN or PROFESSOR)
+Company (`companies`; export `companies`)
+- name: text primary key; there is no company_id.
+- domain: nullable text.
+- hr_name, email, phone_number: nullable text contact fields.
+- pvr_status: nullable boolean; true/false means yes/no, NULL means unknown.
+A company can exist with zero offers and can make offers to many students.
+Company profile is excluded. Compensation belongs to the individual offer,
+not the company. PVR's exact business meaning remains unresolved; do not
+infer additional behavior from it.
 
-Do not put student placement details in users. Do not create a
-department table.
+Placement offer (`placement_offers`; export `placementOffers`)
+- company_name: required text foreign key referencing companies.name.
+- student_roll_number: required text foreign key referencing
+  students.roll_number, with a separate UNIQUE constraint.
+- Composite primary key: (company_name, student_roll_number).
+- job_role: nullable text.
+- package_lpa: nullable PostgreSQL numeric, in lakhs per annum. Drizzle
+  returns this value as a string to preserve precision.
+- offer_type: nullable offer_type enum: PPO, FTE, or FTE+6month.
+- offer_date: nullable date, represented as a string by Drizzle.
+Every offer belongs to exactly one student and one company. The unique
+student_roll_number constraint enforces at most one offer per student;
+the composite primary key alone does not enforce that rule.
+Both foreign keys use ON UPDATE CASCADE and ON DELETE RESTRICT.
+There is no offer_id, offer_status, joining_date, or placement_year column.
+Keep offer_date even though missing historical values are permitted.
+
+User (`users`; export `users`)
+- id: UUID primary key, generated randomly by default.
+- name: nullable text.
+- email: required unique text.
+- password_hash: nullable text for compatibility with provider-based auth;
+  never store plaintext passwords.
+- role: required user_role enum, ADMIN or PROFESSOR; defaults to PROFESSOR.
+Users exist only for authentication and role-based access. Do not add
+student placement details, placement relationships, or is_active to users.
+Professor permissions remain read-only. The users table is not a complete
+Auth.js adapter implementation; authentication integration is separate.
+
 Historical data
-The application must support six years of historical data in the same
-schema. Represent the relevant batch/year as data, not as separate
-tables or separate implementations for each year.
+All six years share these tables, with graduating batches identified by
+students.batch_year. Do not create per-year tables or a department table.
+Non-key historical details remain nullable where the schema permits;
+never fabricate missing source values. Inspect actual source files before
+implementing imports. If source rows appear to contain multiple offers for
+one student, report the conflict with the confirmed one-offer rule rather
+than silently dropping records or relaxing the constraint.
 
-Before finalizing the schema, inspect the actual files and current code.
-Determine whether each source row represents a student, a company
-relationship, or an individual offer. Do not assume that one student can
-have only one offer unless the data and departmental rules confirm it.
 4. Shared engineering rules
 1. Inspect before editing. Read the relevant existing files,
    package scripts, schema, migrations, and nearby code before making
@@ -81,7 +106,7 @@ have only one offer unless the data and departmental rules confirm it.
 3. Use the repository as shared memory. If a decision affects other
    agents, document it in this file or the relevant project
    documentation and commit it.
-4. Do not invent requirements. If the sketch or source data is
+4. Do not invent requirements. If a requirement or source data is
    ambiguous, record the uncertainty and ask for a decision instead of
    silently choosing a business rule.
 5. Keep changes focused. Implement only the task assigned to you.
@@ -146,22 +171,26 @@ One person or agent may own multiple areas if the team is small, but
 each file and shared contract must have a clear owner. Do not ask every
 agent to independently build the entire website.
 7. Database and analytics rules
-- Use the database engine already selected in the repository. If none
-  is selected, propose PostgreSQL and confirm before committing to it.
+- Use PostgreSQL and Drizzle ORM as defined in db/schema.ts. Do not
+  replace the database engine or ORM without explicit approval.
 - Keep historical years in shared tables.
 - Use foreign keys and appropriate unique constraints.
-- Store compensation as a numeric value with a documented unit, such
-  as LPA, rather than free-form text when the source data permits
-  reliable conversion.
+- Store compensation in placement_offers.package_lpa as numeric LPA.
+  Convert source values only when the unit and amount are reliable.
 - Preserve missing or uncertain source values as missing; do not
   fabricate them.
 - Normalize company names carefully during imports and retain a way to
   review ambiguous matches.
-- Define placement-rate denominators explicitly. Do not calculate a
-  placement percentage unless the total eligible student count for
-  that batch is known.
-- Distinguish placed students from offers if the source data counts
-  them differently.
+- Only eligible students are recorded. For a batch, placement rate is
+  students with an offer divided by all recorded students in that batch,
+  multiplied by 100. Publish the rate only when the complete eligible
+  roster has been entered. An empty batch has an undefined rate, not 0%.
+  No separate eligible-count field is currently required.
+- Under the unique student constraint, each offer represents one placed
+  student. Avoid double-counting through joins; flag source data that
+  contradicts the one-offer rule.
+- Derive placement status from offer existence. Offer type describes
+  PPO/FTE/FTE+6month and is not a separate placement-status field.
 - Compute dashboard statistics from the data, using SQL aggregation or
   an existing query layer. Do not store derived KPIs as manually
   maintained values.
@@ -178,28 +207,26 @@ implementations. - Relevant validation commands have been run, or the
 limitation is clearly reported. - Documentation is updated if a shared
 assumption, contract, or workflow changed. - The handoff states exactly
 what changed and what remains.
-9. Open decisions
-Schema decisions confirmed with the project owner are documented in
-`db/README.md` and implemented in `db/schema.ts`. These supersede the
-initial sketch and the corresponding open questions below: PostgreSQL
-with Drizzle; at most one offer per student; company name as primary
-key; composite offer key (company_name, student_roll_number), with
-student_roll_number additionally unique; offer-specific compensation;
-only eligible students recorded; PVR as a nullable yes/no field; and
-professors remain read-only. Company profile, joining_date, and is_active
-are excluded. See that document for unresolved PVR semantics,
-placement-year meaning, source-data validation, and auth integration.
+9. Remaining decisions and integration work
+The database engine, keys, one-offer rule, offer-level compensation,
+eligible-student model, and read-only professor permissions are settled
+as described above. Do not treat them as open questions.
 
-Do not silently resolve these without inspecting the data or asking the
-project owner:
-- Which database engine and ORM are already in use?
-- Does one student have one final placement record or can the dataset
-  contain multiple offers?
-- Does pay_offered vary by company, role, or individual offer?
-- What exactly does the P/F status label in the sketch mean?
-- Does the historical dataset contain the total eligible student count
-  for each batch?
-- Can professors only view analytics, or must they also edit records?
-When an answer becomes known, update this section or the relevant schema
-documentation and commit the change so every laptop and agent receives
-the same context.
+The following remain unresolved:
+- What exactly does PVR mean, and does it describe the company or its
+  contact? Retain the nullable boolean in companies without inventing
+  additional semantics.
+- Is a distinct placement cycle needed beyond graduating batch and offer
+  date? placement_year is currently omitted; derive calendar year from
+  offer_date if that is all that is needed.
+- Validate import mappings, missing values, company-name normalization,
+  and complete eligible rosters against actual historical source files.
+- Select and implement the Auth.js provider/session strategy and any
+  necessary adapter tables. The schema alone does not provide login,
+  sessions, or server-side authorization.
+- Configure the database connection and migration workflow before applying
+  the schema. Do not assume schema generation means a database was migrated.
+
+When a decision changes, update this file and db/README.md along with any
+relevant implementation, and commit the shared documentation so every
+laptop and agent receives the same context.

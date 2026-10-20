@@ -13,6 +13,22 @@
 - Authentication remains a template. No credential verification or session
   handling was introduced by the visual work.
 
+The form panel uses `components/login-form-background/orionimage.png` as a
+decorative background, centered with `object-fit: cover`. Image opacity, color
+adjustments, and a light dark overlay keep Orion's blue visible behind readable
+controls. The form and hero share blue glow colors and matching gradient radii
+so the dimmed glow disperses across their boundary; on mobile the glow meets
+at the horizontal boundary between the stacked panels.
+
+## Serif glint
+
+The lowercase `d` in `pride` has a dedicated inline wrapper. Its CSS
+pseudo-element draws the reflection; a GSAP timeline in `app/login/page.tsx`
+animates only its opacity and brightness through CSS custom properties.
+The position, text, and layout stay fixed. The pulse repeats every 3.8 seconds.
+`gsap.matchMedia()` restores a static reflection for reduced motion and reverts
+the timeline when the page unmounts.
+
 ## Visual validation
 
 Compared a browser screenshot of the login hero with the original HTML rendered

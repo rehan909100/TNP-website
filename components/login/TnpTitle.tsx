@@ -9,7 +9,7 @@
  * while a copper "&" spins in, and the space around it opens up.
  */
 
-import { useState, type PointerEvent } from 'react';
+import { useEffect, useState, type PointerEvent } from 'react';
 import { display } from './fonts';
 
 const EASE_OUT = 'ease-[cubic-bezier(0.22,1,0.36,1)]';
@@ -64,21 +64,44 @@ function Ampersand({ open }: { open: boolean }) {
   );
 }
 
-export default function TnpTitle({ className = '' }: { className?: string }) {
+export default function TnpTitle({ className = '', as = 'h1', useDisplayFont = true, autoIntervalMs }: { className?: string; as?: 'h1' | 'span'; useDisplayFont?: boolean; autoIntervalMs?: number }) {
   const [open, setOpen] = useState(false);
+  const Tag = as;
+
+  useEffect(() => {
+    if (!autoIntervalMs) return;
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let interval: number | undefined;
+    const sync = () => {
+      window.clearInterval(interval);
+      if (reducedMotion.matches) {
+        setOpen(false);
+      } else {
+        interval = window.setInterval(() => setOpen((value) => !value), autoIntervalMs);
+      }
+    };
+
+    sync();
+    reducedMotion.addEventListener('change', sync);
+    return () => {
+      window.clearInterval(interval);
+      reducedMotion.removeEventListener('change', sync);
+    };
+  }, [autoIntervalMs]);
 
   const hover = (event: PointerEvent, next: boolean) => {
-    if (event.pointerType === 'mouse') setOpen(next);
+    if (!autoIntervalMs && event.pointerType === 'mouse') setOpen(next);
   };
 
   return (
-    <h1
+    <Tag
       aria-label="Training and Placement"
-      className={`${display.className} flex w-max shrink-0 cursor-default select-none items-start whitespace-nowrap font-normal leading-[1.2] tracking-[-0.025em] text-[#F3EDE7] ${className}`}
+      className={`${useDisplayFont ? display.className : ''} flex w-max shrink-0 cursor-default select-none items-start whitespace-nowrap font-normal leading-[1.2] tracking-[-0.025em] text-[#F3EDE7] ${className}`}
       onPointerEnter={(event) => hover(event, true)}
       onPointerLeave={(event) => hover(event, false)}
       onPointerUp={(event) => {
-        if (event.pointerType !== 'mouse') setOpen((value) => !value);
+        if (!autoIntervalMs && event.pointerType !== 'mouse') setOpen((value) => !value);
       }}
     >
       <span aria-hidden="true" className="flex items-start">
@@ -88,6 +111,6 @@ export default function TnpTitle({ className = '' }: { className?: string }) {
         <span>P</span>
         <Tail text="lacement" open={open} delay={160} />
       </span>
-    </h1>
+    </Tag>
   );
 }

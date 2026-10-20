@@ -1,69 +1,82 @@
-import Image from "next/image";
+"use client";
 
+import { useState } from "react";
+import "./dashboard.css";
+
+type View = "Home" | "Dashboard";
+
+// Presentation-only shell. Do not load student records until server-side
+// authentication and authorized aggregate queries are implemented.
 export default function Home() {
+  const [view, setView] = useState<View>("Home");
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="dashboard-preview">
+      <a className="skip-link" href="#main-content">Skip to content</a>
+      <div className="portal-shell">
+        <aside className="sidebar">
+          <div className="wordmark"><b>TNP</b><span>MME<br /><strong>NIT TRICHY</strong></span></div>
+          <p className="sidebar-caption">HISTORICAL PLACEMENTS</p>
+          <nav aria-label="Main navigation">
+            {(["Home", "Dashboard"] as const).map((item) => (
+              <button key={item} className={view === item ? "active" : ""}
+                aria-current={view === item ? "page" : undefined}
+                aria-label={item} onClick={() => setView(item)}>
+                <span aria-hidden="true">{item === "Home" ? "H" : "D"}</span>{item}
+              </button>
+            ))}
+          </nav>
+          <div className="profile"><b>MME</b><span>Department workspace<small>Interface preview</small></span></div>
+        </aside>
+        <main id="main-content" className="content-area" tabIndex={-1}>
+          <header className="topbar"><span>MME / {view.toUpperCase()}</span><span>NIT TIRUCHIRAPPALLI</span></header>
+          <p className="preview-notice">Interface preview · Historical data is not connected yet.</p>
+          {view === "Home" ? (
+            <section className="home-view" aria-labelledby="home-title">
+              <div className="home-hero">
+                <p className="eyebrow">METALLURGICAL &amp; MATERIALS ENGINEERING</p>
+                <h1 id="home-title">Six years.<br /><em>One clear view.</em></h1>
+                <p>Explore historical placement outcomes, company participation, and compensation across MME graduating batches.</p>
+                <div className="home-actions"><button className="dark-button" onClick={() => setView("Dashboard")}>Open dashboard <span aria-hidden="true">→</span></button></div>
+              </div>
+              <div className="home-grid">
+                <button className="home-card coral-card" onClick={() => setView("Dashboard")}><span>01 / OUTCOMES</span><strong>Placement<br />dashboard</strong><small>Batch outcomes and compensation summaries <b aria-hidden="true">→</b></small></button>
+                <div className="home-card dark-card"><span>02 / HISTORY</span><strong>Across<br />graduating batches</strong><small>Year-to-year comparisons will appear when historical records are available.</small></div>
+                <div className="home-note"><span>DATA AVAILABILITY</span><strong>Awaiting historical data</strong><p>No placement figures are displayed until records are connected.</p></div>
+              </div>
+            </section>
+          ) : (
+            <section aria-labelledby="dashboard-title">
+              <div className="page-heading">
+                <div><p className="eyebrow">HISTORICAL ANALYTICS</p><h1 id="dashboard-title">Placement overview</h1><p>Outcomes for eligible MME students, grouped by graduating batch.</p></div>
+                <div className="heading-actions"><label htmlFor="batch">BATCH <select id="batch" disabled aria-describedby="batch-help"><option>No batches available</option></select></label></div>
+              </div>
+              <p id="batch-help" className="data-help">Batch options will come from stored historical records.</p>
+              <div className="metric-grid">
+                {[
+                  ["PLACEMENT RATE", "Requires a complete eligible roster", "coral"],
+                  ["STUDENTS PLACED", "Students with a recorded offer", "yellow"],
+                  ["AVERAGE PACKAGE", "Recorded compensation in LPA", "blue"],
+                  ["MEDIAN PACKAGE", "Recorded compensation in LPA", "violet"],
+                ].map(([label, description, color]) => (
+                  <article className={`metric ${color}`} key={label}><h2>{label}</h2><strong aria-label="Not available">—</strong><p>{description}</p></article>
+                ))}
+              </div>
+              <div className="dashboard-grid">
+                <EmptyPanel eyebrow="BATCH OUTCOMES" title="Placement split" description="Placed and unplaced student totals will appear here." />
+                <EmptyPanel eyebrow="COMPANY PARTICIPATION" title="Offers by company" description="Company counts will be calculated from recorded offers." />
+                <EmptyPanel eyebrow="YEAR-ON-YEAR" title="Batch comparison" description="Compare outcomes across available graduating batches." />
+                <EmptyPanel eyebrow="COMPENSATION" title="Package distribution" description="Only known compensation values will contribute to these statistics." />
+                <EmptyPanel eyebrow="OFFER MIX" title="Placement types" description="Offers will be grouped as PPO, FTE, and FTE+6month." />
+              </div>
+            </section>
+          )}
+        </main>
+      </div>
     </div>
   );
+}
+
+function EmptyPanel({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
+  return <section className="panel"><div className="panel-title"><div><p className="eyebrow">{eyebrow}</p><h2>{title}</h2></div></div><div className="empty-state"><p>No historical data available</p><small>{description}</small></div></section>;
 }

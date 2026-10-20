@@ -43,25 +43,20 @@ export default function LoginPage() {
         <footer className={styles.footer}>MME · Training and Placement</footer>
       </section>
 
-      <section className={styles.hero} aria-labelledby="hero-title">
+      <section className={styles.hero} aria-label="Blueprint building illustration">
         <div className={`${styles.layer} ${styles.glow}`} aria-hidden="true" />
         <div className={`${styles.layer} ${styles.grid}`} aria-hidden="true" />
-        <div className={styles.heroContent}>
-          <p className={styles.eyebrow}>NIT TIRUCHIRAPPALLI</p>
-          <h2 id="hero-title">Six years of outcomes.<br /><span>One clear perspective.</span></h2>
-        </div>
-        <div className={styles.building}>
-          <Image src="/login-building.webp" alt="NIT Tiruchirappalli building and clock tower" fill sizes="(max-width: 800px) 100vw, 56vw" priority className={styles.buildingImage} />
+        <div className={`${styles.layer} ${styles.building}`} aria-hidden="true">
+          <Image src="/login-building.webp" alt="" width={640} height={535} unoptimized priority />
         </div>
         <div className={`${styles.layer} ${styles.vignette}`} aria-hidden="true" />
         <div className={`${styles.layer} ${styles.overlay}`} aria-hidden="true">
-          <svg viewBox="0 0 800 1000" preserveAspectRatio="xMidYMid slice">
-            <circle className={styles.arc} cx="500" cy="620" r="420" />
-            <circle className={styles.ring} cx="130" cy="340" r="8" />
-            <g className={styles.plus}><path d="M720 130v20M710 140h20" /><path d="M740 560v20M730 570h20" /><path d="M90 860v20M80 870h20" /></g>
+          <svg viewBox="0 0 1672 941" preserveAspectRatio="xMidYMid slice">
+            <circle className={styles.arc} cx="1250" cy="520" r="640" />
+            <circle className={styles.ring} cx="730" cy="230" r="8" />
+            <g className={styles.plus}><path d="M1432 66v20M1422 76h20" /><path d="M1568 405v20M1558 415h20" /><path d="M622 857v20M612 867h20" /></g>
           </svg>
         </div>
-        <p className={styles.heroCaption}>METALLURGICAL &amp; MATERIALS ENGINEERING <span>01 / HISTORICAL PLACEMENTS</span></p>
       </section>
     </main>
   );

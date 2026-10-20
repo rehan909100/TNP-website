@@ -16,6 +16,7 @@
 # next.js
 /.next/
 /out/
+/dist/
 
 # production
 /build
@@ -32,9 +33,37 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+!.env.local.example
 
 # vercel
 .vercel
+/.turbo/
+
+# package-manager and tool caches
+/.npm/
+/.pnpm-store/
+/.cache/
+.eslintcache
+
+# editors and operating systems
+/.vscode/
+/.idea/
+*.swp
+*.swo
+*.code-workspace
+Thumbs.db
+desktop.ini
+
+# temporary files and reports
+/logs/
+/reports/
+/.nyc_output/
+*.tmp
+*.temp
+*.bak
+*.old
+*~
 
 # typescript
 *.tsbuildinfo

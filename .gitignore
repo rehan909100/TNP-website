@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Next.js and build output
+.next/
+out/
+build/
+dist/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# TypeScript generated files
+next-env.d.ts
+*.tsbuildinfo
+
+# Logs, reports and coverage
+*.log
+logs/
+coverage/
+.nyc_output/
+reports/
+
+# Package-manager caches
+.npm/
+.yarn/
+.pnpm-store/
+.cache/
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.code-workspace
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary and backup files
+*.tmp
+*.temp
+*.bak
+*.old
+*~
+
+# Local tool output
+.vercel/
+.turbo/
+.eslintcache
